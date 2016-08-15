@@ -53,6 +53,8 @@ class summarizer:
 		self.common_stems = [self.stemmer.stem(x) for x in self.common_words]
 
 		self.word_count, self.stem_to_word = self.count_words(full_text)
+		self.number_of_words = len(full_text.split())
+
 		self.sentence_list = self.split_text(full_text)
 		self.sentence_scores = self.score(self.sentence_list, self.word_count)
 
@@ -117,6 +119,12 @@ class summarizer:
 	def filtered_ordered_summarize(self, num):
 		self.ordered_summarize_helper(self.filtered_sentence_scores, num)
 
+	def ordered_summarize_p(self, percent):
+		self.ordered_summarize_p_helper(self.sentence_scores, percent)
+
+	def filtered_ordered_summarize_p(self, percent):
+		self.ordered_summarize_p_helper(self.filtered_sentence_scores, percent)
+
 	def ordered_summarize_helper(self, sentence_scores, num):
 		scores = dict(sentence_scores)
 		try:
@@ -130,11 +138,33 @@ class summarizer:
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
+	def ordered_summarize_p_helper(self, sentence_scores, percent):
+		if percent >= 100 or percent < 10:
+			print("ERROR: Percentage must be a number from 10 and 99")
+		else:
+			p = percent / 100
+			limit = self.number_of_words * (1 - p)
+			scores = dict(sentence_scores)
+			total_words = 0
+			while total_words <= limit:
+				best = max(scores, key = lambda x: scores[x])
+				print(sentence_scores[best])
+				print(best + '\n')
+				scores.pop(best, None)
+				total_words += len(best.split())
+			print("Article reduced by " + str(1 - (total_words / self.number_of_words)) + "%")
+
 	def summarize(self, num):
 		self.summarize_helper(self.sentence_scores, num)
 
 	def filtered_summarize(self, num):
 		self.summarize_helper(self.filtered_sentence_scores, num)
+
+	def summarize_p(self, percent):
+		self.summarize_p_helper(self.sentence_scores, percent)
+
+	def filtered_summarize_p(self, percent):
+		self.summarize_p_helper(self.filtered_sentence_scores, percent)
 
 	def summarize_helper(self, sentence_scores, num):
 		best_sentences = []
@@ -153,6 +183,28 @@ class summarizer:
 					best_sentences.remove(sentence)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+
+	def summarize_p_helper(self, sentence_scores, percent):
+		if percent >= 100 or percent < 10:
+			print("ERROR: Percentage must be a number from 10 and 99")
+		else:
+			p = percent / 100
+			limit = self.number_of_words * (1 - p)
+			best_sentences = []
+			scores = dict(sentence_scores)
+			total_words = 0
+			while total_words <= limit:
+				best = max(scores, key = lambda x: scores[x])
+				best_sentences.append(best)
+				scores.pop(best, None)
+				total_words += len(best.split())
+			for sentence in self.sentence_list:
+				if sentence in best_sentences:
+					print(sentence_scores[sentence])
+					print(sentence + '\n')
+					best_sentences.remove(sentence)
+			print("Article reduced by " + str(1 - (total_words / self.number_of_words)) + "%")
+
 
 	def print_keywords(self, num):
 		try:
@@ -179,12 +231,12 @@ class summarizer:
 
 
 s = summarizer()
-s.print_filtered_keywords(5)
+s.filtered_ordered_summarize_p(80)
 
 
 ###make method for ranking most to least important sentences-DONE
-###remove stop words (common words like the, of, and, etc)
-###make method for reducing by a certain percentage. eg. shorten by 80%
+###remove stop words (common words like the, of, and, etc)-DONE
+###make method for reducing by a certain percentage. eg. shorten by 80%-DONE
 ###make method to view top words-DONE
 
 
