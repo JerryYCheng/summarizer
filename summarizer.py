@@ -1,8 +1,10 @@
+import nltk.stem.wordnet
 import nltk.data
 import nltk.stem.porter
 import string
 
-### Need to download nltk as well as the punkt tokenizer
+### Need to download nltk as well as the punkt tokenizer and corpora/wordnet
+### Without lemmatizer/keyword display it can run faster
 
 full_text = """
 
@@ -42,10 +44,20 @@ Forces aligned with the Kurdish regional government said Sunday in a statement t
 
 class summarizer:
 	def __init__(self):
+		self.common_words = ["the", "be", "am", "is", "are", "being", "was", "were", "been", "to", "of", "and", "a", "in", "that", "have",
+							 "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they"
+							 "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what"]
 		self.stemmer = nltk.stem.porter.PorterStemmer()
-		self.word_count = self.count_words(full_text)
+		self.lemmatizer = nltk.stem.wordnet.WordNetLemmatizer()
+
+		self.common_stems = [self.stemmer.stem(x) for x in self.common_words]
+
+		self.word_count, self.stem_to_word = self.count_words(full_text)
 		self.sentence_list = self.split_text(full_text)
 		self.sentence_scores = self.score(self.sentence_list, self.word_count)
+
+		self.filtered_word_count = self.filter_word_count()
+		self.filtered_sentence_scores = self.score(self.sentence_list, self.filtered_word_count)
 
 	def strip_word(self, word):
 		trans = str.maketrans({c: None for c in string.punctuation})
@@ -64,15 +76,18 @@ class summarizer:
 	def count_words(self, text):
 		#text = "Hello, it's me! I was wondering if after all these years you'd like to meet. Hello can you hear me too."
 		word_count = {}
+		word_map = {}
 		words = text.split()
 		for word in words:
 			word = self.strip_word(word)
-			word = self.stemmer.stem(word)
-			if word in word_count:
-				word_count[word] += 1
+			word_stem = self.stemmer.stem(word)
+			word_lem = self.lemmatizer.lemmatize(word)
+			if word_stem in word_count:
+				word_count[word_stem] += 1
 			else:
-				word_count[word] = 1
-		return word_count
+				word_count[word_stem] = 1
+				word_map[word_stem] = word_lem
+		return word_count, word_map
 
 	def score(self, sentences, word_score):
 		sent_scores = {}
@@ -89,6 +104,29 @@ class summarizer:
 			sent_scores[sentence] = score
 		return sent_scores
 
+	def filter_word_count(self):
+		filtered_word_count = {}
+		for word in self.word_count:
+			if word not in self.common_stems:
+				filtered_word_count[word] = self.word_count[word]
+		return filtered_word_count
+
+
+	
+
+	def ordered_summarize(self, num):
+		scores = dict(self.sentence_scores)
+		try:
+			if num > len(scores):
+				raise IndexError 
+			for i in range(num):
+				best = max(scores, key = lambda x: scores[x])
+				print(self.sentence_scores[best])
+				print(best + '\n')
+				scores.pop(best, None)
+		except IndexError:
+			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+
 	def summarize(self, num):
 		best_sentences = []
 		scores = dict(self.sentence_scores)
@@ -101,34 +139,83 @@ class summarizer:
 				scores.pop(best, None)
 			for sentence in self.sentence_list:
 				if sentence in best_sentences:
+					print(self.sentence_scores[sentence])
 					print(sentence + '\n')
 					best_sentences.remove(sentence)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
-	def ordered_summarize(self, num):
+	def filtered_summarize(self, num):
 		best_sentences = []
-		scores = dict(self.sentence_scores)
+		scores = dict(self.filtered_sentence_scores)
 		try:
 			if num > len(scores):
 				raise IndexError 
 			for i in range(num):
 				best = max(scores, key = lambda x: scores[x])
-				print(best + '\n')
+				best_sentences.append(best)
 				scores.pop(best, None)
+			for sentence in self.sentence_list:
+				if sentence in best_sentences:
+					print(self.filtered_sentence_scores[sentence])
+					print(sentence + '\n')
+					best_sentences.remove(sentence)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
-	def return_keywords(self, num):
-		pass
+	def summarize_helper(self, sentence_scores, num):
+		best_sentences = []
+		scores = dict(sentence_scores)
+		try:
+			if num > len(scores):
+				raise IndexError 
+			for i in range(num):
+				best = max(scores, key = lambda x: scores[x])
+				best_sentences.append(best)
+				scores.pop(best, None)
+			for sentence in self.sentence_list:
+				if sentence in best_sentences:
+					print(self.filtered_sentence_scores[sentence])
+					print(sentence + '\n')
+					best_sentences.remove(sentence)
+		except IndexError:
+			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+
+	def print_keywords(self, num):
+		words_copy = dict(self.word_count)
+		try:
+			if num > len(words_copy):
+				raise IndexError 
+			for i in range(num):
+				best_stem = max(words_copy, key = lambda x: words_copy[x])
+				best_word = self.stem_to_word[best_stem]
+				print(best_word + " " + str(words_copy[best_stem]) + '\n')
+				words_copy.pop(best_stem, None)
+		except IndexError:
+			print("ERROR: Article does not have " + str(num) + " distinct words. Article has " + str(len(words_copy)) + " distinct words.")
+
+	def print_filtered_keywords(self, num):
+		filtered_words_copy = dict(self.filtered_word_count)
+		try:
+			if num > len(filtered_words_copy):
+				raise IndexError 
+			for i in range(num):
+				best_stem = max(filtered_words_copy, key = lambda x: filtered_words_copy[x])
+				best_word = self.stem_to_word[best_stem]
+				print(best_word + " " + str(filtered_words_copy[best_stem]) + '\n')
+				filtered_words_copy.pop(best_stem, None)
+		except IndexError:
+			print("ERROR: Article does not have " + str(num) + " distinct non-common words. Article has " + str(len(filtered_words_copy)) + " distinct non-common words.")
+
 
 
 s = summarizer()
-s.summarize(4)
+s.filtered_summarize(3)
+
 
 ###make method for ranking most to least important sentences-DONE
 ###remove stop words (common words like the, of, and, etc)
 ###make method for reducing by a certain percentage. eg. shorten by 80%
-###make method to view top words
+###make method to view top words-DONE
 
 
