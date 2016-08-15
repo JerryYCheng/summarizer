@@ -111,57 +111,30 @@ class summarizer:
 				filtered_word_count[word] = self.word_count[word]
 		return filtered_word_count
 
-
-	
-
 	def ordered_summarize(self, num):
-		scores = dict(self.sentence_scores)
+		self.ordered_summarize_helper(self.sentence_scores, num)
+
+	def filtered_ordered_summarize(self, num):
+		self.ordered_summarize_helper(self.filtered_sentence_scores, num)
+
+	def ordered_summarize_helper(self, sentence_scores, num):
+		scores = dict(sentence_scores)
 		try:
 			if num > len(scores):
 				raise IndexError 
 			for i in range(num):
 				best = max(scores, key = lambda x: scores[x])
-				print(self.sentence_scores[best])
+				print(sentence_scores[best])
 				print(best + '\n')
 				scores.pop(best, None)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
 	def summarize(self, num):
-		best_sentences = []
-		scores = dict(self.sentence_scores)
-		try:
-			if num > len(scores):
-				raise IndexError 
-			for i in range(num):
-				best = max(scores, key = lambda x: scores[x])
-				best_sentences.append(best)
-				scores.pop(best, None)
-			for sentence in self.sentence_list:
-				if sentence in best_sentences:
-					print(self.sentence_scores[sentence])
-					print(sentence + '\n')
-					best_sentences.remove(sentence)
-		except IndexError:
-			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+		self.summarize_helper(self.sentence_scores, num)
 
 	def filtered_summarize(self, num):
-		best_sentences = []
-		scores = dict(self.filtered_sentence_scores)
-		try:
-			if num > len(scores):
-				raise IndexError 
-			for i in range(num):
-				best = max(scores, key = lambda x: scores[x])
-				best_sentences.append(best)
-				scores.pop(best, None)
-			for sentence in self.sentence_list:
-				if sentence in best_sentences:
-					print(self.filtered_sentence_scores[sentence])
-					print(sentence + '\n')
-					best_sentences.remove(sentence)
-		except IndexError:
-			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+		self.summarize_helper(self.filtered_sentence_scores, num)
 
 	def summarize_helper(self, sentence_scores, num):
 		best_sentences = []
@@ -175,42 +148,38 @@ class summarizer:
 				scores.pop(best, None)
 			for sentence in self.sentence_list:
 				if sentence in best_sentences:
-					print(self.filtered_sentence_scores[sentence])
+					print(sentence_scores[sentence])
 					print(sentence + '\n')
 					best_sentences.remove(sentence)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
 	def print_keywords(self, num):
-		words_copy = dict(self.word_count)
 		try:
-			if num > len(words_copy):
-				raise IndexError 
-			for i in range(num):
-				best_stem = max(words_copy, key = lambda x: words_copy[x])
-				best_word = self.stem_to_word[best_stem]
-				print(best_word + " " + str(words_copy[best_stem]) + '\n')
-				words_copy.pop(best_stem, None)
+			self.print_keywords_helper(self.word_count, num)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " distinct words. Article has " + str(len(words_copy)) + " distinct words.")
 
 	def print_filtered_keywords(self, num):
-		filtered_words_copy = dict(self.filtered_word_count)
 		try:
-			if num > len(filtered_words_copy):
-				raise IndexError 
-			for i in range(num):
-				best_stem = max(filtered_words_copy, key = lambda x: filtered_words_copy[x])
-				best_word = self.stem_to_word[best_stem]
-				print(best_word + " " + str(filtered_words_copy[best_stem]) + '\n')
-				filtered_words_copy.pop(best_stem, None)
+			self.print_keywords_helper(self.filtered_word_count, num)
 		except IndexError:
 			print("ERROR: Article does not have " + str(num) + " distinct non-common words. Article has " + str(len(filtered_words_copy)) + " distinct non-common words.")
+
+	def print_keywords_helper(self, word_count, num):
+		words_copy = dict(word_count)
+		if num > len(words_copy):
+			raise IndexError 
+		for i in range(num):
+			best_stem = max(words_copy, key = lambda x: words_copy[x])
+			best_word = self.stem_to_word[best_stem]
+			print(best_word + " " + str(words_copy[best_stem]) + '\n')
+			words_copy.pop(best_stem, None)
 
 
 
 s = summarizer()
-s.filtered_summarize(3)
+s.print_filtered_keywords(5)
 
 
 ###make method for ranking most to least important sentences-DONE
