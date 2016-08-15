@@ -43,6 +43,9 @@ Forces aligned with the Kurdish regional government said Sunday in a statement t
 class summarizer:
 	def __init__(self):
 		self.stemmer = nltk.stem.porter.PorterStemmer()
+		self.word_count = self.count_words(full_text)
+		self.sentence_list = self.split_text(full_text)
+		self.sentence_scores = self.score(self.sentence_list, self.word_count)
 
 	def strip_word(self, word):
 		trans = str.maketrans({c: None for c in string.punctuation})
@@ -87,9 +90,8 @@ class summarizer:
 		return sent_scores
 
 	def summarize(self, num):
-		sentences = self.split_text(full_text)
-		scores = self.score(sentences, self.count_words(full_text))
 		best_sentences = []
+		scores = dict(self.sentence_scores)
 		try:
 			if num > len(scores):
 				raise IndexError 
@@ -97,33 +99,36 @@ class summarizer:
 				best = max(scores, key = lambda x: scores[x])
 				best_sentences.append(best)
 				scores.pop(best, None)
-			for sentence in sentences:
+			for sentence in self.sentence_list:
 				if sentence in best_sentences:
-					print(sentence)
+					print(sentence + '\n')
 					best_sentences.remove(sentence)
 		except IndexError:
-			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(scores)) + " sentences.")
+			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
 
 	def ordered_summarize(self, num):
-		sentences = self.split_text(full_text)
-		scores = self.score(sentences, self.count_words(full_text))
 		best_sentences = []
+		scores = dict(self.sentence_scores)
 		try:
 			if num > len(scores):
 				raise IndexError 
 			for i in range(num):
 				best = max(scores, key = lambda x: scores[x])
-				print(best)
+				print(best + '\n')
 				scores.pop(best, None)
 		except IndexError:
-			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(scores)) + " sentences.")
+			print("ERROR: Article does not have " + str(num) + " sentences. Article has " + str(len(self.sentence_scores)) + " sentences.")
+
+	def return_keywords(self, num):
+		pass
 
 
 s = summarizer()
-s.summarize(3)
+s.summarize(4)
 
-###make method for ranking most to least important sentences
+###make method for ranking most to least important sentences-DONE
 ###remove stop words (common words like the, of, and, etc)
 ###make method for reducing by a certain percentage. eg. shorten by 80%
+###make method to view top words
 
 
